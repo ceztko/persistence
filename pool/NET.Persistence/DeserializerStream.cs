@@ -20,10 +20,10 @@ namespace NET.Persistence
         private bool _Disposed;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IPersistableItem _currentItem;
+        private IPersistable _currentItem;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IPersistableItem _ParentItem;
+        private IPersistable _ParentItem;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private ILinkRef _currentLinkRef;
@@ -66,7 +66,7 @@ namespace NET.Persistence
         #region Inquiry
 
         public void ReadElementAs<T>(ref T itemref)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             Assert();
             Guid guid = Guid.Empty;
@@ -74,7 +74,7 @@ namespace NET.Persistence
         }
 
         public void ReadElementAs<T, TCtx>(ref T itemref, TCtx context)
-            where T : IPersistableItem, IContextAwareItem<TCtx>
+            where T : IPersistable, IContextAware<TCtx>
         {
             Assert();
             Guid guid = Guid.Empty;
@@ -82,7 +82,7 @@ namespace NET.Persistence
         }
 
         public void ReadElementAs<T, TCtx1, TCtx2>(ref T itemref, TCtx1 context1, TCtx2 context2)
-            where T : IPersistableItem, IContextAwareItem<TCtx1>, IContextAwareItem<TCtx2>
+            where T : IPersistable, IContextAware<TCtx1>, IContextAware<TCtx2>
         {
             Assert();
             Guid guid = Guid.Empty;
@@ -178,7 +178,7 @@ namespace NET.Persistence
         }
 
         public T ReadElementAs<T>()
-            where T : IPersistableItem
+            where T : IPersistable
         {
             Assert();
             T ret = default(T);
@@ -263,7 +263,7 @@ namespace NET.Persistence
 
         internal ILinkRef ReadElementAs<T>(ref T item, ref Guid guid,
             bool checkVersion)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             return ReadElementAs(ref item, ref guid, checkVersion,
             delegate(ref T reviseditem)
@@ -274,7 +274,7 @@ namespace NET.Persistence
 
         internal ILinkRef ReadElementAs<T, TCtx>(ref T item, ref Guid guid,
             TCtx context, bool checkVersion)
-            where T : IPersistableItem, IContextAwareItem<TCtx>
+            where T : IPersistable, IContextAware<TCtx>
         {
             return ReadElementAs(ref item, ref guid, checkVersion,
             delegate(ref T reviseditem)
@@ -285,13 +285,13 @@ namespace NET.Persistence
 
         internal ILinkRef ReadElementAs<T, TCtx1, TCtx2>(ref T item, ref Guid guid,
             TCtx1 context1, TCtx2 context2, bool checkVersion)
-            where T : IPersistableItem, IContextAwareItem<TCtx1>, IContextAwareItem<TCtx2>
+            where T : IPersistable, IContextAware<TCtx1>, IContextAware<TCtx2>
         {
             return ReadElementAs(ref item, ref guid, checkVersion,
             delegate(ref T reviseditem)
             {
-                (reviseditem as IContextAwareItem<TCtx1>).Context = context1;
-                (reviseditem as IContextAwareItem<TCtx2>).Context = context2;
+                (reviseditem as IContextAware<TCtx1>).Context = context1;
+                (reviseditem as IContextAware<TCtx2>).Context = context2;
             });
         }
 
@@ -301,7 +301,7 @@ namespace NET.Persistence
         ///     link, this is the guid of a detached element</param>
         private ILinkRef ReadElementAs<T>(ref T item, ref Guid guid,
             bool checkVersion, ActionRef<T> setContext)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             if (this.EmptyElement)
             {
@@ -311,10 +311,10 @@ namespace NET.Persistence
             }
 
             // NB: typeSafe is item.GetType() if item != null
-            Type typeSafe = ItemUtils.GetTypeSafe(ref item);
+            Type typeSafe = PersistableUtils.GetTypeSafe(ref item);
 
-            IPersistableItem prevParent = _ParentItem;
-            IPersistableItem prevCurrent = _currentItem;
+            IPersistable prevParent = _ParentItem;
+            IPersistable prevCurrent = _currentItem;
             ILinkRef prevParentLinkRef = _parentLinkRef;
             ILinkRef prevCurrentLinkRef = _currentLinkRef;
 
@@ -333,7 +333,7 @@ namespace NET.Persistence
 
                 if (checkVersion)
                 {
-                    string refVersion = ItemUtils.ComputeVersion(childElement.Type);
+                    string refVersion = PersistableUtils.ComputeVersion(childElement.Type);
                     if (refVersion != childElement.Version)
                         throw new ItemVersionMismatchException();
                 }
@@ -410,14 +410,14 @@ namespace NET.Persistence
         }
 
         private static T InitializeObject<T>(Type type)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             T ret = (T)FormatterServices.GetUninitializedObject(type);
 
             while (type != typeof(object))
             {
                 // Looks for the first non-IPersistableItem type in the hierarchy
-                if (typeof(IPersistableItem).IsAssignableFrom(type))
+                if (typeof(IPersistable).IsAssignableFrom(type))
                 {
                     type = type.BaseType;
                     continue;
@@ -568,7 +568,7 @@ namespace NET.Persistence
             }
         }
 
-        public IPersistableItem ParentItem
+        public IPersistable ParentItem
         {
             get { return _ParentItem; }
         }

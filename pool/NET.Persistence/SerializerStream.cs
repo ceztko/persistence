@@ -15,10 +15,10 @@ namespace NET.Persistence
         private bool _Disposed;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IPersistableItem _currentItem;
+        private IPersistable _currentItem;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private IPersistableItem _ParentItem;
+        private IPersistable _ParentItem;
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private ILinkRef _currentLinkRef;
@@ -77,7 +77,7 @@ namespace NET.Persistence
         /// Value types can't be referenced
         /// </summary>
         public void WriteElement<T>(T item, bool link = false)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             Assert();
 
@@ -100,14 +100,14 @@ namespace NET.Persistence
                 }
             }
 
-            WriteElement(ItemUtils.GetTypeSafe(ref item).Name, ref item, linkRef, false, link);
+            WriteElement(PersistableUtils.GetTypeSafe(ref item).Name, ref item, linkRef, false, link);
         }
 
         public void WriteElement<T>(ref T item)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             Assert();
-            WriteElement(ItemUtils.GetTypeSafe(ref item).Name, ref item, null, false, false);
+            WriteElement(PersistableUtils.GetTypeSafe(ref item).Name, ref item, null, false, false);
         }
 
         public void WriteElement(string value)
@@ -175,7 +175,7 @@ namespace NET.Persistence
         /// Value types can't be referenced
         /// </summary>
         public void WriteElement<T>(string localName, T item, bool link = false)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             Assert();
 
@@ -202,7 +202,7 @@ namespace NET.Persistence
         }
 
         public void WriteElement<T>(string localName, ref T item)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             Assert();
             WriteElement(localName, ref item, null, false, false);
@@ -292,13 +292,13 @@ namespace NET.Persistence
 
         internal void WriteElement<T>(string localName, ref T item,
             ILinkRef currentLinkRef, bool writeVersion, bool link)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             // NB: typeSafe is item.GetType() if item != null
-            Type typeSafe = ItemUtils.GetTypeSafe(ref item);
+            Type typeSafe = PersistableUtils.GetTypeSafe(ref item);
 
-            IPersistableItem prevParent = _ParentItem;
-            IPersistableItem prevCurrent = _currentItem;
+            IPersistable prevParent = _ParentItem;
+            IPersistable prevCurrent = _currentItem;
             ILinkRef prevParentLinkRef = _parentLinkRef;
             ILinkRef prevCurrentLinkRef = _currentLinkRef;
 
@@ -343,7 +343,7 @@ namespace NET.Persistence
 
         private void WriteVersionAttribute(Type type)
         {
-            string versionAttribute = ItemUtils.ComputeVersion(type);
+            string versionAttribute = PersistableUtils.ComputeVersion(type);
             if (versionAttribute != null)
                 WriteAttribute("Version", versionAttribute);
         }
@@ -380,7 +380,7 @@ namespace NET.Persistence
 
         #region Properties
 
-        public IPersistableItem ParentItem
+        public IPersistable ParentItem
         {
             get { return _ParentItem; }
         }

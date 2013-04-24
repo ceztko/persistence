@@ -17,7 +17,7 @@ namespace NET.Persistence
     {
         #region Fields
 
-        private ConditionalWeakTable<IPersistableItem, ILinkRef> _linkRefTable;
+        private ConditionalWeakTable<IPersistable, ILinkRef> _linkRefTable;
         private Dictionary<Guid, WeakReference> _guidRefTable;
         private Dictionary<Type, string> _savePaths;
 
@@ -27,7 +27,7 @@ namespace NET.Persistence
 
         public Persister()
         {
-            _linkRefTable = new ConditionalWeakTable<IPersistableItem, ILinkRef>();
+            _linkRefTable = new ConditionalWeakTable<IPersistable, ILinkRef>();
             _guidRefTable = new Dictionary<Guid, WeakReference>();
             _savePaths = new Dictionary<Type, string>();
         }
@@ -37,29 +37,29 @@ namespace NET.Persistence
         #region Inquiry
 
         public void Serialize<T>(T item, string filepath)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             using (SerializerStream serializableStream =
                 GetSerializerStream(filepath))
             {
-                serializableStream.WriteElement(ItemUtils.GetTypeSafe(ref item).Name, ref item,
+                serializableStream.WriteElement(PersistableUtils.GetTypeSafe(ref item).Name, ref item,
                     null, true, false);
             }
         }
 
         public void Serialize<T>(ref T item, string filepath)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             using (SerializerStream serializableStream =
                 GetSerializerStream(filepath))
             {
-                serializableStream.WriteElement(ItemUtils.GetTypeSafe(ref item).Name, ref item,
+                serializableStream.WriteElement(PersistableUtils.GetTypeSafe(ref item).Name, ref item,
                     null, true, false);
             }
         }
 
         public void Deserialize<T>(ref T item, string filepath)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             using (DeserializerStream deserializableStream =
                 GetDeserializerStream(filepath))
@@ -70,7 +70,7 @@ namespace NET.Persistence
         }
 
         public void Deserialize<T, TCtx>(ref T item, TCtx context, string filepath)
-            where T : IPersistableItem, IContextAwareItem<TCtx>
+            where T : IPersistable, IContextAware<TCtx>
         {
             using (DeserializerStream deserializableStream =
                 GetDeserializerStream(filepath))
@@ -81,7 +81,7 @@ namespace NET.Persistence
         }
 
         public void Deserialize<T, TCtx1, TCtx2>(ref T item, TCtx1 context1, TCtx2 context2, string filepath)
-            where T : IPersistableItem, IContextAwareItem<TCtx1>, IContextAwareItem<TCtx2>
+            where T : IPersistable, IContextAware<TCtx1>, IContextAware<TCtx2>
         {
             using (DeserializerStream deserializableStream =
                 GetDeserializerStream(filepath))
@@ -92,10 +92,10 @@ namespace NET.Persistence
         }
 
         public ILinkInfo Persist<T>(T item)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             ILinkRef linkRef = _linkRefTable.GetValue(item,
-            delegate(IPersistableItem localitem)
+            delegate(IPersistable localitem)
             {
                 // NB: Ignore the localitem argument otherwise we loose the type
                 // information
@@ -106,7 +106,7 @@ namespace NET.Persistence
         }
 
         public T GetItem<T>(ref Guid guid)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             T item;
             GetItem(out item, ref guid);
@@ -114,7 +114,7 @@ namespace NET.Persistence
         }
 
         public ILinkInfo GetItem<T>(out T item, ref Guid guid)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             item = default(T);
             ILinkRef linkRef;
@@ -123,7 +123,7 @@ namespace NET.Persistence
         }
 
         public IEnumerable<T> GetItems<T>()
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             string savepath = _savePaths[typeof(T)];
             if (!Directory.Exists(savepath))
@@ -160,7 +160,7 @@ namespace NET.Persistence
         }
 
         public bool Release<T>(T item)
-            where T : class, IPersistableItem
+            where T : class, IPersistable
         {
             ILinkRef linkRef;
             bool found = _linkRefTable.TryGetValue(item, out linkRef);
@@ -194,7 +194,7 @@ namespace NET.Persistence
         #region Private
 
         internal ILinkRef RegisterItem<T>(T item, ref Guid guid)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             ILinkRef linkRef = registerItem(item, ref guid);
             _linkRefTable.Add(item, linkRef);
@@ -202,11 +202,11 @@ namespace NET.Persistence
         }
 
         internal bool GetLinkRef<T>(T item, out ILinkRef linkRef)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             bool found = true;
             linkRef = _linkRefTable.GetValue(item,
-            delegate(IPersistableItem localitem)
+            delegate(IPersistable localitem)
             {
                 found = false;
                 // NB: Ignore the localitem argument otherwise we loose the type
@@ -223,13 +223,13 @@ namespace NET.Persistence
             return false;
         }
 
-        internal bool TryGetLinkRef(IPersistableItem item, out ILinkRef linkRef)
+        internal bool TryGetLinkRef(IPersistable item, out ILinkRef linkRef)
         {
             return _linkRefTable.TryGetValue(item, out linkRef);
         }
 
         internal void GetItem<T>(out ILinkRef linkRef, ref T item, ref Guid guid)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             WeakReference weakReference;
             bool found = _guidRefTable.TryGetValue(guid, out weakReference);
@@ -264,7 +264,7 @@ namespace NET.Persistence
         }
 
         private void Persist<T>(T item, ILinkRef linkRef)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             string savePath = GetSavePathSafe(item);
             Directory.CreateDirectory(savePath);
@@ -275,13 +275,13 @@ namespace NET.Persistence
             using (SerializerStream serializableStream =
                 GetSerializerStream(filepath))
             {
-                serializableStream.WriteElement(ItemUtils.GetTypeSafe(ref item).Name, ref item,
+                serializableStream.WriteElement(PersistableUtils.GetTypeSafe(ref item).Name, ref item,
                     linkRef, true, false);
             }
         }
 
         private ILinkRef registerItem<T>(T item)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             Guid guid = Guid.NewGuid();
             WeakReference weakReference = new WeakReference(item);
@@ -291,7 +291,7 @@ namespace NET.Persistence
         }
 
         private ILinkRef registerItem<T>(T item, ref Guid guid)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             WeakReference weakReference = new WeakReference(item);
             ILinkRef ret = new LinkRef<T>(weakReference, ref guid, this);
@@ -300,7 +300,7 @@ namespace NET.Persistence
         }
 
         private string GetSavePathSafe<T>(T item)
-            where T : IPersistableItem
+            where T : IPersistable
         {
             string savePath;
             bool found = _savePaths.TryGetValue(item.GetType(), out savePath);
@@ -323,7 +323,7 @@ namespace NET.Persistence
         /// Get the corrispective ILinkInfo
         /// NB: struct can't be registered so it will always return null for structs
         /// </summary>
-        public ILinkInfo this[IPersistableItem item]
+        public ILinkInfo this[IPersistable item]
         {
             get
             {
@@ -347,7 +347,7 @@ namespace NET.Persistence
     #region Support
 
     internal class LinkRef<T> : ILinkRef
-        where T : IPersistableItem
+        where T : IPersistable
     {
         #region Fields
 
