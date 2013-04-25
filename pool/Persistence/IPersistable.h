@@ -19,7 +19,7 @@ namespace Persistence
     };
 
 	template <typename T>
-    class PERSISTENCE_API IPersistable
+    class IPersistable
     {
     public:
         void Serialize(SerializerStream &writer);
@@ -28,14 +28,14 @@ namespace Persistence
     };
 
 	template <typename T>
-    class PERSISTENCE_API IDefaultable
+    class IDefaultable
     {
 	public:
         void Default();
     };
 
     template <typename T, typename TContext>
-    class PERSISTENCE_API IContextAware
+    class IContextAware
     {
     public:
         void SetContext(TContext context);
